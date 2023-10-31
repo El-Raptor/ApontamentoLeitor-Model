@@ -4,15 +4,18 @@ import java.math.BigDecimal;
 
 public class MateriaPrima {
 	private BigDecimal codprod;
-	private String controle;
 	private BigDecimal qtdMP;
 	private BigDecimal qtdDisponivel;
+	private String controle;
+	private String mpProd;
 
-	public MateriaPrima(BigDecimal codprod, String controle, BigDecimal qtdMP, BigDecimal qtdDisponivel) {
+	public MateriaPrima(BigDecimal codprod, String controle, BigDecimal qtdMP, BigDecimal qtdDisponivel,
+			BigDecimal mpprin) {
 		this.codprod = codprod;
 		this.controle = controle;
 		this.qtdMP = qtdMP;
 		this.qtdDisponivel = qtdDisponivel;
+		this.mpProd = String.valueOf(mpprin)+ codprod;
 	}
 
 	public BigDecimal getCodprod() {
@@ -47,6 +50,16 @@ public class MateriaPrima {
 		this.qtdDisponivel = qtdDisponivel;
 	}
 	
+	
+
+	public String getMpProd() {
+		return mpProd;
+	}
+
+	public void setMpProd(String mpProd) {
+		this.mpProd = mpProd;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof MateriaPrima) {

@@ -218,8 +218,12 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 			hnd = JapeSession.open();
 
 			// Altera o valor do campo Nro. Apontamento para o NUAPO gerado.
-			JapeFactory.dao("ApontamentoVolumes").prepareToUpdateByPK(codbarras).set("NUAPO", apontamento.getNuapo())
-					.set("PESOBRUTO", apontamento.getVolume()).set("PESOLIQ", apontamento.getVolume()).update();
+			JapeFactory.dao("ApontamentoVolumes")
+					.prepareToUpdateByPK(codbarras)
+					.set("NUAPO", apontamento.getNuapo())
+					.set("PESOBRUTO", apontamento.getVolume())
+					.set("PESOLIQ", apontamento.getVolume())
+					.update();
 
 		} catch (Exception e) {
 			throwExceptionRollingBack(e);
@@ -374,11 +378,14 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 	 */
 	private ApontamentoTotem addMateriasPrimas(JdbcWrapper jdbc, ApontamentoTotem aptTotem, Apontamento apontamento,
 			ProdutoControle produtoAcabado) throws Exception {
-		ArrayList<MateriaPrima> materiasPrimas = getProdutosMP(jdbc, apontamento, aptTotem);
-		Map<BigDecimal, BigDecimal> produtos = new HashMap<>();
+		
+		ArrayList<BigDecimal> mpPrincipais = qtdMpPrincipal(jdbc, apontamento);
+		Map<String, BigDecimal> produtos = new HashMap<>();
 
-		if (materiasPrimas.isEmpty())
+		if (mpPrincipais.isEmpty())
 			throw new Exception("Matéria Prima empenhada não encontrada na composição do Produto Acabado.");
+		
+		ArrayList<MateriaPrima> materiasPrimas = getProdutosMP(jdbc, apontamento, aptTotem);
 
 		for (MateriaPrima mp : materiasPrimas) {
 			BigDecimal qtdMp = mp.getQtdMP();
@@ -388,24 +395,26 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 			System.out.println("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 			System.out.println("Lista de Materias-primas");
 
-			if (produtos.containsKey(mp.getCodprod())) {
+			// Inserção no mapa de Produtos
+			if (produtos.containsKey(mp.getMpProd())) {
 				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 				System.out.println("Ja possui produto.");
-				saldo = produtos.get(mp.getCodprod());
+				saldo = produtos.get(mp.getMpProd());
 
 			} else {
 				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 				System.out.println("Ainda nao possui produto.");
 				saldo = mp.getQtdMP();
-				produtos.put(mp.getCodprod(), saldo);
+				produtos.put(mp.getMpProd(), saldo);
 			}
 
 			System.out.println("Produto: " + mp.getCodprod());
 			System.out.println("Lote: " + mp.getControle());
 			System.out.println("Qtd. MP: " + qtdMp);
-			System.out.println("Saldo: " + produtos.get(mp.getCodprod()));
+			System.out.println("Saldo: " + produtos.get(mp.getMpProd()));
 			System.out.println("Qtd. Disponivel: " + qtdDisponivel);
 
+			// Consumo
 			// Se QtdMP for menor ou igual do que a Qtd. Disponivel
 			if (saldo.compareTo(qtdDisponivel) <= 0 && !saldo.equals(BigDecimal.ZERO)) {
 				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
@@ -413,7 +422,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				ProdutoControle pc = new ProdutoControle(mp.getCodprod(), mp.getControle());
 
 				aptTotem.addMateriaPrima(produtoAcabado, pc, saldo); // Adiciona a materia-prima
-				produtos.put(mp.getCodprod(), BigDecimal.ZERO);
+				produtos.put(mp.getMpProd(), BigDecimal.ZERO);
 			} else if (saldo.compareTo(qtdDisponivel) == 1 && !saldo.equals(BigDecimal.ZERO)) { // Se QtdMP for maior do
 																								// que a Qtd.
 																								// Disponível.
@@ -422,14 +431,14 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				ProdutoControle pc = new ProdutoControle(mp.getCodprod(), mp.getControle());
 
 				aptTotem.addMateriaPrima(produtoAcabado, pc, qtdDisponivel); // Adiciona a materia-prima
-				produtos.put(mp.getCodprod(), saldo.subtract(qtdDisponivel));
+				produtos.put(mp.getMpProd(), saldo.subtract(qtdDisponivel));
 
 			}
 
 		} // for
 
 		// Exibe erro de estoque insuficiente.
-		for (Map.Entry<BigDecimal, BigDecimal> produto : produtos.entrySet())
+		for (Map.Entry<String, BigDecimal> produto : produtos.entrySet())
 			if (!produto.getValue().equals(BigDecimal.ZERO))
 				throw new Exception("Estoque insuficiente para MP " + produto.getKey());
 
@@ -452,20 +461,28 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 	 * @throws Exception intercepta uma exceção genérica.
 	 */
 	private ArrayList<MateriaPrima> getProdutosMP(JdbcWrapper jdbc, Apontamento apontamento, ApontamentoTotem aptTotem)
-			throws Exception {
+			throws SQLException, Exception {
 
 		NativeSql sql = new NativeSql(jdbc);
 
 		// Consulta que retorna a quantidade a ser apontada.
 		sql.appendSql(" SELECT ");
+		sql.appendSql("    CODPRODMPPRIN, ");
 		sql.appendSql("    CODPRODMP, ");
 		sql.appendSql("    QTDMISTURA,");
 		sql.appendSql("    CONTROLE, ");
-		sql.appendSql("    QTDISPONIVEL ");
+		sql.appendSql("    SUM(QTDISPONIVEL) AS QTDISPONIVEL ");
 		sql.appendSql(" FROM ");
 		sql.appendSql("    VW_SALDOS_MP_SKMS ");
 		sql.appendSql(" WHERE ");
 		sql.appendSql("    ID = :CODBARRAS ");
+		sql.appendSql(" GROUP BY ");
+		sql.appendSql("    CODPRODMPPRIN, ");
+		sql.appendSql("    CODPRODMP, ");
+		sql.appendSql("    QTDMISTURA,");
+		sql.appendSql("    CONTROLE, ");
+		sql.appendSql("    NUNOTA, ");
+		sql.appendSql("    SEQUENCIA ");
 		sql.appendSql(" ORDER BY ");
 		sql.appendSql("    CODPRODMP,");
 		sql.appendSql("    NUNOTA, ");
@@ -473,52 +490,99 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 
 		sql.setNamedParameter("CODBARRAS", apontamento.getCodbarras());
 
-		ResultSet result = sql.executeQuery();
-
+		ResultSet result = null;
 		ArrayList<MateriaPrima> materiasPrimas = new ArrayList<>();
+		try {
+			result = sql.executeQuery();
 
-		// Percorre o conjunto de resultado da consulta executada e os adicionam no
-		// mapa de matérias-prima.
-		while (result.next()) {
-			String controle = result.getString("CONTROLE");
-			BigDecimal qtdMistura = result.getBigDecimal("QTDMISTURA");
-			BigDecimal qtdDisponivel = result.getBigDecimal("QTDISPONIVEL");
-			BigDecimal codprodmp = result.getBigDecimal("CODPRODMP");
+			// Percorre o conjunto de resultado da consulta executada e os adicionam no
+			// mapa de matérias-prima.
+			while (result.next()) {
+				String controle = result.getString("CONTROLE");
+				BigDecimal mpprin = result.getBigDecimal("CODPRODMPPRIN");
+				BigDecimal qtdMistura = result.getBigDecimal("QTDMISTURA");
+				BigDecimal qtdDisponivel = result.getBigDecimal("QTDISPONIVEL");
+				BigDecimal codprodmp = result.getBigDecimal("CODPRODMP");
 
-			BigDecimal qtdMp = apontamento.getVolume().multiply(qtdMistura);
+				BigDecimal qtdMp = apontamento.getVolume().multiply(qtdMistura);
 
-			MateriaPrima materiaPrima = new MateriaPrima(codprodmp, controle, qtdMp, qtdDisponivel);
+				MateriaPrima materiaPrima = new MateriaPrima(codprodmp, controle, qtdMp, qtdDisponivel, mpprin);
 
-			System.out.println("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-			System.out.println("Obtendo materias-primas");
-			System.out.println("Produto: " + codprodmp);
-			System.out.println("Lote: " + controle);
-			System.out.println("Qtd. Mistura: " + qtdMistura);
-			System.out.println("Qtd. MP: " + qtdMp);
-			System.out.println("Qtd. Disponivel: " + qtdDisponivel);
+				System.out.println("\n=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+				System.out.println("Obtendo materias-primas");
+				System.out.println("Produto Principal: " + mpprin);
+				System.out.println("Produto: " + codprodmp);
+				System.out.println("Lote: " + controle);
+				System.out.println("Qtd. Mistura: " + qtdMistura);
+				System.out.println("Qtd. MP: " + qtdMp);
+				System.out.println("Qtd. Disponivel: " + qtdDisponivel);
 
-			// Já existe esse lote dessa materia-prima.
-			if (materiasPrimas.contains(materiaPrima)) {
-				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-				System.out.println("Ja existe lote dessa materia-prima.");
-				MateriaPrima mpExistente = materiasPrimas.get(materiasPrimas.indexOf(materiaPrima));
-				materiaPrima.setQtdDisponivel(qtdDisponivel.add(mpExistente.getQtdDisponivel()));
-				materiasPrimas.set(materiasPrimas.indexOf(materiaPrima), materiaPrima);
-			} else {// Ainda nao existe essa materia-prima.
-				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
-				System.out.println("Ainda nao existe lote dessa materia-prima.");
+				// Já existe esse lote dessa materia-prima.
+				/*if (materiasPrimas.contains(materiaPrima)) {
+					System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+					System.out.println("Ja existe lote dessa materia-prima.");
+					MateriaPrima mpExistente = materiasPrimas.get(materiasPrimas.indexOf(materiaPrima));
+					materiaPrima.setQtdDisponivel(qtdDisponivel.add(mpExistente.getQtdDisponivel()));
+					materiasPrimas.set(materiasPrimas.indexOf(materiaPrima), materiaPrima);
+				} else {// Ainda nao existe essa materia-prima.
+					System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
+					System.out.println("Ainda nao existe lote dessa materia-prima.");
+					materiasPrimas.add(materiaPrima);
+				}*/
+				
 				materiasPrimas.add(materiaPrima);
-			}
 
-		} // while
-
-		result.close();
+			} // while
+		} catch (SQLException e) {
+			e.printStackTrace();
+			throw new SQLException("Erro na consulta de obtenção de matérias primas.\n" + e.getMessage());
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new Exception("Erro na operação de matérias primas.\n" + e.getMessage());
+		} finally {
+			result.close();
+		}
 
 		return materiasPrimas;
 	}
 
 	/**
-	 * Monta a resposta da requisição do serviço de acordo com o resultado do mesmo.
+	 * Retorna a quantidade de MP principal de um apontamento de produção.
+	 * 
+	 * @param jdbc        driver de conexão com o banco de dados.
+	 * @param apontamento instância de um <code>Apontamento</code> que possui as
+	 *                    informações necessárias para o apontamento. de produção.
+	 * @return <Object>ArrayList</Object> a quantidade de MP principal de um
+	 *         apontamento de produção.
+	 *         
+	 */
+	private ArrayList<BigDecimal> qtdMpPrincipal(JdbcWrapper jdbc, Apontamento apontamento) throws Exception {
+
+		NativeSql sql = new NativeSql(jdbc);
+		ArrayList<BigDecimal> mpPrincipal = new ArrayList<>();
+
+		// Consulta que retorna a quantidade de MPs principais.
+		sql.appendSql(" SELECT  ");
+		sql.appendSql("    DISTINCT CODPRODMPPRIN ");
+		sql.appendSql(" FROM ");
+		sql.appendSql("    VW_SALDOS_MP_SKMS ");
+		sql.appendSql(" WHERE ");
+		sql.appendSql("    ID = :CODBARRAS ");
+
+		sql.setNamedParameter("CODBARRAS", apontamento.getCodbarras());
+
+		ResultSet result = sql.executeQuery();
+
+		while (result.next()) 
+			mpPrincipal.add(result.getBigDecimal(1));
+		
+
+		return mpPrincipal;
+	}
+
+	/**
+	 * -- Respostas e Requisições JSON -- </br>
+	 * Envia a resposta montada da requisição do serviço.
 	 * 
 	 * @param ctx      contexto atual do serviço.
 	 * @param status   status da resposta do serviço.
@@ -528,6 +592,15 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 		ctx.setJsonResponse(buildResponse(status, (String) resposta));
 	}
 
+	/**
+	 * -- Respostas e Requisições JSON -- </br>
+	 * Monta a resposta da requisição do serviço de acordo com o retorno da resposta
+	 * do mesmo.
+	 * 
+	 * @param status   status da resposta do serviço.
+	 * @param resposta valor da resposta do serviço.
+	 * @return JsonObject objeto que representa a resposta do JSON criado.
+	 */
 	private JsonObject buildResponse(int status, String resposta) {
 		JsonObject statusObject = new JsonObject();
 		statusObject.addProperty("statusResposta", status);
