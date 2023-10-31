@@ -6,8 +6,8 @@ public class MateriaPrima {
 	private BigDecimal codprod;
 	private BigDecimal qtdMP;
 	private BigDecimal qtdDisponivel;
+	private BigDecimal mpPrincipal;
 	private String controle;
-	private String mpProd;
 
 	public MateriaPrima(BigDecimal codprod, String controle, BigDecimal qtdMP, BigDecimal qtdDisponivel,
 			BigDecimal mpprin) {
@@ -15,7 +15,7 @@ public class MateriaPrima {
 		this.controle = controle;
 		this.qtdMP = qtdMP;
 		this.qtdDisponivel = qtdDisponivel;
-		this.mpProd = String.valueOf(mpprin)+ codprod;
+		this.mpPrincipal = mpprin;
 	}
 
 	public BigDecimal getCodprod() {
@@ -52,12 +52,12 @@ public class MateriaPrima {
 	
 	
 
-	public String getMpProd() {
-		return mpProd;
+	public BigDecimal getMpPrincipal() {
+		return mpPrincipal;
 	}
 
-	public void setMpProd(String mpProd) {
-		this.mpProd = mpProd;
+	public void setMpPrincipal(BigDecimal mpPrincipal) {
+		this.mpPrincipal = mpPrincipal;
 	}
 
 	@Override

@@ -380,7 +380,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 			ProdutoControle produtoAcabado) throws Exception {
 		
 		ArrayList<BigDecimal> mpPrincipais = qtdMpPrincipal(jdbc, apontamento);
-		Map<String, BigDecimal> produtos = new HashMap<>();
+		Map<BigDecimal, BigDecimal> produtos = new HashMap<>();
 
 		if (mpPrincipais.isEmpty())
 			throw new Exception("Matéria Prima empenhada não encontrada na composição do Produto Acabado.");
@@ -396,22 +396,23 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 			System.out.println("Lista de Materias-primas");
 
 			// Inserção no mapa de Produtos
-			if (produtos.containsKey(mp.getMpProd())) {
+			if (produtos.containsKey(mp.getMpPrincipal())) {
 				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 				System.out.println("Ja possui produto.");
-				saldo = produtos.get(mp.getMpProd());
+				saldo = produtos.get(mp.getMpPrincipal());
 
 			} else {
 				System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 				System.out.println("Ainda nao possui produto.");
 				saldo = mp.getQtdMP();
-				produtos.put(mp.getMpProd(), saldo);
+				produtos.put(mp.getMpPrincipal(), saldo);
 			}
-
+			
 			System.out.println("Produto: " + mp.getCodprod());
+			System.out.println("ProdMP: " + mp.getMpPrincipal());
 			System.out.println("Lote: " + mp.getControle());
 			System.out.println("Qtd. MP: " + qtdMp);
-			System.out.println("Saldo: " + produtos.get(mp.getMpProd()));
+			System.out.println("Saldo: " + produtos.get(mp.getMpPrincipal()));
 			System.out.println("Qtd. Disponivel: " + qtdDisponivel);
 
 			// Consumo
@@ -422,7 +423,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				ProdutoControle pc = new ProdutoControle(mp.getCodprod(), mp.getControle());
 
 				aptTotem.addMateriaPrima(produtoAcabado, pc, saldo); // Adiciona a materia-prima
-				produtos.put(mp.getMpProd(), BigDecimal.ZERO);
+				produtos.put(mp.getMpPrincipal(), BigDecimal.ZERO);
 			} else if (saldo.compareTo(qtdDisponivel) == 1 && !saldo.equals(BigDecimal.ZERO)) { // Se QtdMP for maior do
 																								// que a Qtd.
 																								// Disponível.
@@ -431,14 +432,14 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				ProdutoControle pc = new ProdutoControle(mp.getCodprod(), mp.getControle());
 
 				aptTotem.addMateriaPrima(produtoAcabado, pc, qtdDisponivel); // Adiciona a materia-prima
-				produtos.put(mp.getMpProd(), saldo.subtract(qtdDisponivel));
+				produtos.put(mp.getMpPrincipal(), saldo.subtract(qtdDisponivel));
 
 			}
 
 		} // for
 
 		// Exibe erro de estoque insuficiente.
-		for (Map.Entry<String, BigDecimal> produto : produtos.entrySet())
+		for (Map.Entry<BigDecimal, BigDecimal> produto : produtos.entrySet())
 			if (!produto.getValue().equals(BigDecimal.ZERO))
 				throw new Exception("Estoque insuficiente para MP " + produto.getKey());
 
