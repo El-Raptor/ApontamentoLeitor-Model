@@ -4,15 +4,18 @@ import java.math.BigDecimal;
 
 public class MateriaPrima {
 	private BigDecimal codprod;
-	private String controle;
 	private BigDecimal qtdMP;
 	private BigDecimal qtdDisponivel;
+	private BigDecimal mpPrincipal;
+	private String controle;
 
-	public MateriaPrima(BigDecimal codprod, String controle, BigDecimal qtdMP, BigDecimal qtdDisponivel) {
+	public MateriaPrima(BigDecimal codprod, String controle, BigDecimal qtdMP, BigDecimal qtdDisponivel,
+			BigDecimal mpprin) {
 		this.codprod = codprod;
 		this.controle = controle;
 		this.qtdMP = qtdMP;
 		this.qtdDisponivel = qtdDisponivel;
+		this.mpPrincipal = mpprin;
 	}
 
 	public BigDecimal getCodprod() {
@@ -47,11 +50,22 @@ public class MateriaPrima {
 		this.qtdDisponivel = qtdDisponivel;
 	}
 	
+	
+
+	public BigDecimal getMpPrincipal() {
+		return mpPrincipal;
+	}
+
+	public void setMpPrincipal(BigDecimal mpPrincipal) {
+		this.mpPrincipal = mpPrincipal;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (o instanceof MateriaPrima) {
 			MateriaPrima mp = (MateriaPrima) o;
-			return this.codprod.equals(mp.codprod) && this.controle.equals(mp.controle);
+			return this.codprod.equals(mp.codprod) && this.controle.equals(mp.controle)
+					&& this.mpPrincipal.equals(mp.mpPrincipal);
 		}
 		return false;
 	}
