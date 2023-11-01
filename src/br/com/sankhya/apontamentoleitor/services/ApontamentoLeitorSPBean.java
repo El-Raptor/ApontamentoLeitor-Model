@@ -472,18 +472,11 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 		sql.appendSql("    CODPRODMP, ");
 		sql.appendSql("    QTDMISTURA,");
 		sql.appendSql("    CONTROLE, ");
-		sql.appendSql("    SUM(QTDISPONIVEL) AS QTDISPONIVEL ");
+		sql.appendSql("    QTDISPONIVEL ");
 		sql.appendSql(" FROM ");
 		sql.appendSql("    VW_SALDOS_MP_SKMS ");
 		sql.appendSql(" WHERE ");
 		sql.appendSql("    ID = :CODBARRAS ");
-		sql.appendSql(" GROUP BY ");
-		sql.appendSql("    CODPRODMPPRIN, ");
-		sql.appendSql("    CODPRODMP, ");
-		sql.appendSql("    QTDMISTURA,");
-		sql.appendSql("    CONTROLE, ");
-		sql.appendSql("    NUNOTA, ");
-		sql.appendSql("    SEQUENCIA ");
 		sql.appendSql(" ORDER BY ");
 		sql.appendSql("    CODPRODMP,");
 		sql.appendSql("    NUNOTA, ");
@@ -519,7 +512,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				System.out.println("Qtd. Disponivel: " + qtdDisponivel);
 
 				// Já existe esse lote dessa materia-prima.
-				/*if (materiasPrimas.contains(materiaPrima)) {
+				if (materiasPrimas.contains(materiaPrima)) {
 					System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 					System.out.println("Ja existe lote dessa materia-prima.");
 					MateriaPrima mpExistente = materiasPrimas.get(materiasPrimas.indexOf(materiaPrima));
@@ -529,9 +522,9 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 					System.out.println("=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=");
 					System.out.println("Ainda nao existe lote dessa materia-prima.");
 					materiasPrimas.add(materiaPrima);
-				}*/
+				}
 				
-				materiasPrimas.add(materiaPrima);
+				//materiasPrimas.add(materiaPrima);
 
 			} // while
 		} catch (SQLException e) {

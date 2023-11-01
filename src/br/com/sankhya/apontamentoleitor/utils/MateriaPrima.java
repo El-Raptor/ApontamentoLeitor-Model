@@ -64,7 +64,8 @@ public class MateriaPrima {
 	public boolean equals(Object o) {
 		if (o instanceof MateriaPrima) {
 			MateriaPrima mp = (MateriaPrima) o;
-			return this.codprod.equals(mp.codprod) && this.controle.equals(mp.controle);
+			return this.codprod.equals(mp.codprod) && this.controle.equals(mp.controle)
+					&& this.mpPrincipal.equals(mp.mpPrincipal);
 		}
 		return false;
 	}
