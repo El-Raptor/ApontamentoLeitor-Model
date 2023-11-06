@@ -103,7 +103,13 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 				buildResponse(ctx, 2, "Quantidade apontada não encontrada.");
 				return;
 			}
+			
 
+			// Verifica se há apontamentos pendentes para essa ordem de produção
+			if (qtdApoPendentes(jdbc, apontamento) > 0)
+				throw new Exception("A Ordem de Produção deste volume possui apontamentos pendentes,"
+						+ " confirme os apontamentos pendentes para realizar um novo.");
+			
 			ApontamentoHelper apontHelper = new ApontamentoHelper(jdbc);
 			// Cria apontamento e retorna o nuapo.
 			BigDecimal nuapo = apontHelper.criarApontamentoTotem(criarApontamento(jdbc, apontamento),
@@ -540,6 +546,44 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 		return materiasPrimas;
 	}
 
+	/**
+	 * Retorna a quantidade de apontamentos pendentes.
+	 * 
+	 * @param jdbc        driver de conexão com o banco de dados.
+	 * @param apontamento instância de um <code>Apontamento</code> que possui as
+	 *                    informações necessárias para o apontamento. de produção.
+	 * @return <code>int</code> a quantidade de apontamento de produção pendentes.
+	 *         
+	 */
+	private int qtdApoPendentes(JdbcWrapper jdbc, Apontamento apontamento) throws Exception {
+
+		NativeSql sql = new NativeSql(jdbc);
+		int qtdApt = 0;
+
+		// Consulta que retorna a quantidade de MPs principais.
+		sql.appendSql(" SELECT  ");
+		sql.appendSql("    COUNT(*) ");
+		sql.appendSql(" FROM ");
+		sql.appendSql("    TPRAPO APO ");
+		sql.appendSql("    JOIN TPRAPA  APA ON APO.NUAPO = APA.NUAPO ");
+		sql.appendSql("    JOIN TPRAMP  AMP ON AMP.NUAPO = APA.NUAPO ");
+		sql.appendSql("    JOIN TPRIATV ATV ON ATV.IDIATV = APO.IDIATV ");
+		sql.appendSql("    JOIN TPRAVO  AVO ON AVO.IDIPROC = ATV.IDIPROC ");
+		sql.appendSql(" WHERE ");
+		sql.appendSql("    ID = :CODBARRAS ");
+		sql.appendSql("    AND APO.SITUACAO = 'P' ");
+
+		sql.setNamedParameter("CODBARRAS", apontamento.getCodbarras());
+
+		ResultSet result = sql.executeQuery();
+
+		if (result.next()) 
+			qtdApt = result.getInt(1);
+		
+
+		return qtdApt;
+	}
+	
 	/**
 	 * Retorna a quantidade de MP principal de um apontamento de produção.
 	 * 
