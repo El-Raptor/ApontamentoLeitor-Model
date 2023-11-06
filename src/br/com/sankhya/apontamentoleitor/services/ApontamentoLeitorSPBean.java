@@ -447,7 +447,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 		// Exibe erro de estoque insuficiente.
 		for (Map.Entry<BigDecimal, BigDecimal> produto : produtos.entrySet())
 			if (!produto.getValue().equals(BigDecimal.ZERO))
-				throw new Exception("Estoque insuficiente para MP " + produto.getKey());
+				throw new Exception("Estoque insuficiente para MP.");
 
 		return aptTotem;
 	}
@@ -484,7 +484,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 		sql.appendSql(" WHERE ");
 		sql.appendSql("    ID = :CODBARRAS ");
 		sql.appendSql(" ORDER BY ");
-		sql.appendSql("    CODPRODMP,");
+		sql.appendSql("    CODPRODMPPRIN,");
 		sql.appendSql("    NUNOTA, ");
 		sql.appendSql("    SEQUENCIA ");
 
