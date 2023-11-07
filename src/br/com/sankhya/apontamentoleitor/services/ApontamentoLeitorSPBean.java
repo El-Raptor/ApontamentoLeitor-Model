@@ -460,7 +460,7 @@ public class ApontamentoLeitorSPBean extends BaseSPBean implements SessionBean {
 	 * @param apontamento instância de um <code>Apontamento</code> que possui as
 	 *                    informações necessárias para o apontamento. de produção.
 	 * 
-	 * @param aptTotem    instância de um <cod>ApontamentoTotem</code> o qual é o
+	 * @param aptTotem    instância de um <code>ApontamentoTotem</code> o qual é o
 	 *                    responsável por passar as informações necessárias para o
 	 *                    helper de apontamento.
 	 * @return Uma lista de produtos de matéria prima que participam da produção de
